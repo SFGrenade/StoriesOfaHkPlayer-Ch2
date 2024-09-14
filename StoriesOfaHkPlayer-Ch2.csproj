@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <Product>StoriesOfaHkPlayer_Ch2</Product>
+        <RootNamespace>StoriesOfaHkPlayer_Ch2</RootNamespace>
+        <AssemblyName>StoriesOfaHkPlayer_Ch2</AssemblyName>
+        <AssemblyTitle>StoriesOfaHkPlayer_Ch2</AssemblyTitle>
+        <Description>A Hollow Knight Mod</Description>
+        <Copyright>Copyright © SFGrenade 2024</Copyright>
+        <AssemblyVersion>1.5.0.0</AssemblyVersion>
+        <FileVersion>$(AssemblyVersion)</FileVersion>
+        <ImplicitUsings>false</ImplicitUsings>
+        <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+        <OutputPath>bin/$(Configuration)/</OutputPath>
+        <LangVersion>latest</LangVersion>
+        <PathMap>$(MSBuildProjectDirectory)=source</PathMap>
+        <AssemblyOriginatorKeyFile>../sgKey.snk</AssemblyOriginatorKeyFile>
+        <HollowKnightRefs />
+        <ExportDir />
+        <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
+    </PropertyGroup>
+    <Import Project="LocalOverrides.targets" Condition="Exists('LocalOverrides.targets')" />
+    <Import Project="build_steps.targets" />
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' AND Exists('$(AssemblyOriginatorKeyFile)') ">
+        <SignAssembly>true</SignAssembly>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="$(HollowKnightRefs)/*.dll" />
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Resources" />
+        <Folder Include="src" />
+        <Folder Include="test" />
+        <None Include=".gitignore" />
+        <None Include="LICENSE" />
+        <None Include="README.md" />
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Resources/Language.json" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../SFCore/SFCore.csproj" />
+    </ItemGroup>
+</Project>
