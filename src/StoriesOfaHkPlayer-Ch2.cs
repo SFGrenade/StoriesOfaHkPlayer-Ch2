@@ -37,7 +37,7 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
     {
         LangStrings = new LanguageStrings(Assembly.GetExecutingAssembly(), "StoriesOfaHkPlayer_Ch2.Resources.Language.json", Encoding.UTF8);
 
-        MenuStyleHelper.AddMenuStyleHook += AddMenuStyle;
+        InitCallbacks();
     }
 
     public override void Initialize()
@@ -45,16 +45,17 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         Log("Initializing");
         Instance = this;
 
-        ModHooks.LanguageGetHook += OnLanguageGetHook;
-
         var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
         MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false);
 
-        GameObject.Find("BlurPlane (1)").SetActive(false);
-        GameObject.Find("LogoTitle").SetActive(false);
-        UIManager.instance.UICanvas.gameObject.SetActive(false);
-
         Log("Initialized");
+    }
+
+    private void InitCallbacks()
+    {
+        MenuStyleHelper.AddMenuStyleHook += AddMenuStyle;
+
+        ModHooks.LanguageGetHook += OnLanguageGetHook;
     }
 
     private (string languageString, GameObject styleGo, int titleIndex, string unlockKey, string[] achievementKeys, MenuStyles.MenuStyle.CameraCurves cameraCurves, AudioMixerSnapshot musicSnapshot) AddMenuStyle(MenuStyles self)
@@ -90,7 +91,7 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         aSource.bypassListenerEffects = false;
         aSource.bypassReverbZones = false;
         aSource.playOnAwake = true;
-        aSource.loop = false;
+        aSource.loop = true;
         aSource.priority = 128;
         aSource.volume = 1;
         aSource.pitch = 1;
@@ -110,16 +111,11 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         //vp.playOnAwake = false;
         vp.audioOutputMode = VideoAudioOutputMode.AudioSource;
         vp.renderMode = VideoRenderMode.CameraFarPlane;
-        vp.isLooping = false;
+        vp.isLooping = true;
         vp.targetCamera = GameCameras.instance.mainCamera;
         vp.source = VideoSource.VideoClip;
         vp.clip = _abTitleScreen.LoadAsset<VideoClip>("StoriesOfaHkPlayer_Ch2");
         vp.SetTargetAudioSource(0, aSource);
-        vp.loopPointReached += (videoPlayer) =>
-        {
-            UIManager.instance.QuitGame();
-            //Application.Quit();
-        };
         UObject.DontDestroyOnLoad(vp.clip);
 
         var cameraCurves = new MenuStyles.MenuStyle.CameraCurves();
