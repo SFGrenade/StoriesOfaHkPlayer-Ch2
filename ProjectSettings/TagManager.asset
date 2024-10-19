@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - TileMap
   layers:
   - Default
   - TransparentFX
@@ -13,29 +14,29 @@ TagManager:
   - UI
   - 
   - 
+  - Terrain
+  - Player
+  - Transition Gates
+  - Enemies
+  - Projectiles
+  - Hero Detector
+  - Terrain Detector
+  - Enemy Detector
+  - Item
+  - Hero Attack
+  - Particle
+  - Interactive Object
+  - Hero Box
+  - Grass
+  - Enemy Attack
+  - Damage All
+  - Bouncer
+  - Soft Terrain
+  - Corpse
+  - UGUI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Map Pin
   - 
   m_SortingLayers:
   - name: Default
