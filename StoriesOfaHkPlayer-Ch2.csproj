@@ -17,6 +17,7 @@
         <AssemblyOriginatorKeyFile>../sgKey.snk</AssemblyOriginatorKeyFile>
         <HollowKnightRefs />
         <ExportDir />
+        <AssetbundleDir />
         <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
     </PropertyGroup>
     <Import Project="LocalOverrides.targets" Condition="Exists('LocalOverrides.targets')" />
@@ -29,7 +30,6 @@
     </ItemGroup>
     <ItemGroup>
         <Folder Include="Resources" />
-        <Folder Include="src" />
         <Folder Include="test" />
         <None Include=".gitignore" />
         <None Include="LICENSE" />
@@ -37,6 +37,8 @@
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Resources/Language.json" />
+        <EmbeddedResource Include="Resources/storiesofahkplayer_ch2" />
+        <EmbeddedResource Include="Resources/storiesofahkplayer_ch2_scenes" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="../SFCore/SFCore.csproj" />

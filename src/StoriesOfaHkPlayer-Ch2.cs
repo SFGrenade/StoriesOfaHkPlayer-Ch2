@@ -1,6 +1,7 @@
 ﻿using Modding;
 using SFCore;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -8,7 +9,6 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UObject = UnityEngine.Object;
 using USceneManager = UnityEngine.SceneManagement.SceneManager;
-using UnityEngine.Video;
 using System.Linq;
 using System.Text;
 using SFCore.Utils;
@@ -21,7 +21,8 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
 
     public LanguageStrings LangStrings { get; private set; }
 
-    private AssetBundle _abTitleScreen = null;
+    private AssetBundle _abAssets = null;
+    private AssetBundle _abScenes = null;
 
     public override string GetVersion() => Util.GetVersion(Assembly.GetExecutingAssembly());
 
@@ -33,8 +34,31 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         };
     }
 
+    private void LoadAssetbundles()
+    {
+        Assembly asm = Assembly.GetExecutingAssembly();
+        if (_abAssets == null)
+        {
+            using Stream s = asm.GetManifestResourceStream("StoriesOfaHkPlayer_Ch2.Resources.storiesofahkplayer_ch2");
+            if (s != null)
+            {
+                _abAssets = AssetBundle.LoadFromStream(s);
+            }
+        }
+        if (_abScenes == null)
+        {
+            using Stream s = asm.GetManifestResourceStream("StoriesOfaHkPlayer_Ch2.Resources.storiesofahkplayer_ch2_scenes");
+            if (s != null)
+            {
+                _abScenes = AssetBundle.LoadFromStream(s);
+            }
+        }
+    }
+
     public StoriesOfaHkPlayer_Ch2() : base("Stories of a HK player - Chapter 2")
     {
+        LoadAssetbundles();
+
         LangStrings = new LanguageStrings(Assembly.GetExecutingAssembly(), "StoriesOfaHkPlayer_Ch2.Resources.Language.json", Encoding.UTF8);
 
         InitCallbacks();
@@ -46,7 +70,7 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         Instance = this;
 
         var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
-        MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false);
+        MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
 
         Log("Initialized");
     }
@@ -54,69 +78,50 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
     private void InitCallbacks()
     {
         MenuStyleHelper.AddMenuStyleHook += AddMenuStyle;
+        On.AudioManager.ApplyMusicCue += LoadMenuMusic;
 
         ModHooks.LanguageGetHook += OnLanguageGetHook;
     }
 
+    private void LoadMenuMusic(On.AudioManager.orig_ApplyMusicCue orig, AudioManager self, MusicCue musicCue, float delayTime, float transitionTime, bool applySnapshot)
+    {
+        // Insert Custom Audio into main MusicCue
+        var infos = (MusicCue.MusicChannelInfo[]) musicCue.GetType().GetField("channelInfos", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(musicCue);
+            
+        var origAudio = infos[0].GetAttr<MusicCue.MusicChannelInfo, AudioClip>("clip");
+        if (origAudio != null && origAudio.name.Equals("Title"))
+        {
+            infos[(int) MusicChannels.Tension] = new MusicCue.MusicChannelInfo();
+            infos[(int) MusicChannels.Tension].SetAttr("clip", _abAssets.LoadAsset<AudioClip>("Ch2-Menu-Music-Wrapped"));
+            // Don't sync this audio with the not-as-long normal main menu theme
+            infos[(int) MusicChannels.Tension].SetAttr("sync", MusicChannelSync.ExplicitOff);
+        }
+        musicCue.GetType().GetField("channelInfos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(musicCue, infos);
+        orig(self, musicCue, delayTime, transitionTime, applySnapshot);
+    }
+
     private (string languageString, GameObject styleGo, int titleIndex, string unlockKey, string[] achievementKeys, MenuStyles.MenuStyle.CameraCurves cameraCurves, AudioMixerSnapshot musicSnapshot) AddMenuStyle(MenuStyles self)
     {
-        GameObject menuStyleGo = new GameObject("StoriesOfaHkPlayer_Ch2 Style");
+        GameObject menuStyleGo = GameObject.Instantiate(_abAssets.LoadAsset<GameObject>("MenuStyle"));
+        menuStyleGo.name = "StoriesOfaHkPlayer_Ch2 Style";
+        menuStyleGo.transform.position = new Vector3(0, 0, 0);
+        menuStyleGo.transform.SetParent(self.transform, true);
+        UnityEngine.Object.DontDestroyOnLoad(menuStyleGo);
         menuStyleGo.SetActive(false);
 
-        menuStyleGo.transform.SetParent(self.gameObject.transform);
-        menuStyleGo.transform.localPosition = new Vector3(0, -1.2f, 0);
+        menuStyleGo.Find("Canvas").GetComponent<Canvas>().worldCamera = GameCameras.instance.mainCamera;
+        menuStyleGo.Find("Wind-Effect-1").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader = Shader.Find(menuStyleGo.Find("Wind-Effect-1").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader.name);
+        menuStyleGo.Find("Wind-Effect-2").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader = Shader.Find(menuStyleGo.Find("Wind-Effect-2").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader.name);
 
-        #region Loading assetbundle
-
-        if (_abTitleScreen == null)
+        foreach (MenuStyles.MenuStyle style in self.styles)
         {
-            Assembly asm = Assembly.GetExecutingAssembly();
-            using (Stream s = asm.GetManifestResourceStream("StoriesOfaHkPlayer_Ch2.Resources.storiesofahkplayer_ch2"))
+            if (style.displayName == "UI_MENU_STYLE_CLASSIC")
             {
-                if (s != null)
-                {
-                    _abTitleScreen = AssetBundle.LoadFromStream(s);
-                }
+                GameObject.Instantiate(style.styleObject.Find("Audio Player Actor 2D"), menuStyleGo.transform, true);
+                GameObject.Instantiate(style.styleObject.Find("Audio Player Actor 2D (1)"), menuStyleGo.transform, true);
+                break;
             }
         }
-
-        #endregion
-
-        var aSource = menuStyleGo.AddComponent<AudioSource>();
-        aSource.clip = null;
-        aSource.outputAudioMixerGroup = self.styles[0].styleObject.Find("Audio Player Actor 2D (1)")
-            .GetComponent<AudioSource>().outputAudioMixerGroup;
-        aSource.mute = false;
-        aSource.bypassEffects = false;
-        aSource.bypassListenerEffects = false;
-        aSource.bypassReverbZones = false;
-        aSource.playOnAwake = true;
-        aSource.loop = true;
-        aSource.priority = 128;
-        aSource.volume = 1;
-        aSource.pitch = 1;
-        aSource.panStereo = 0;
-        aSource.spatialBlend = 0;
-        aSource.reverbZoneMix = 1;
-        aSource.dopplerLevel = 0;
-        aSource.spread = 0;
-        aSource.rolloffMode = AudioRolloffMode.Custom;
-        aSource.maxDistance = 58.79711f;
-        aSource.SetCustomCurve(AudioSourceCurveType.CustomRolloff, new AnimationCurve(new []
-        {
-            new Keyframe(45.86174f, 1),
-            new Keyframe(55.33846f, 0)
-        }));
-        var vp = menuStyleGo.AddComponent<VideoPlayer>();
-        //vp.playOnAwake = false;
-        vp.audioOutputMode = VideoAudioOutputMode.AudioSource;
-        vp.renderMode = VideoRenderMode.CameraFarPlane;
-        vp.isLooping = true;
-        vp.targetCamera = GameCameras.instance.mainCamera;
-        vp.source = VideoSource.VideoClip;
-        vp.clip = _abTitleScreen.LoadAsset<VideoClip>("StoriesOfaHkPlayer_Ch2");
-        vp.SetTargetAudioSource(0, aSource);
-        UObject.DontDestroyOnLoad(vp.clip);
 
         var cameraCurves = new MenuStyles.MenuStyle.CameraCurves();
         cameraCurves.saturation = 1f;
@@ -129,35 +134,37 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         cameraCurves.blueChannel = new AnimationCurve();
         cameraCurves.blueChannel.AddKey(new Keyframe(0f, 0f));
         cameraCurves.blueChannel.AddKey(new Keyframe(1f, 1f));
-        UObject.DontDestroyOnLoad(menuStyleGo);
+
         menuStyleGo.SetActive(true);
-        //PrintDebug(menuStyleGo);
-        return ("UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2", menuStyleGo, -1, "", null, cameraCurves, Resources.FindObjectsOfTypeAll<AudioMixer>().First(x => x.name == "Music").FindSnapshot("Silent"));
+        return ("UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2", menuStyleGo, -1, "", null, cameraCurves, Resources.FindObjectsOfTypeAll<AudioMixer>().First(x => x.name == "Music").FindSnapshot("Tension Only"));
     }
 
     private string OnLanguageGetHook(string key, string sheet, string orig)
     {
-        //Log($"Sheet: {sheet}; Key: {key}");
+        Log($"Sheet: {sheet}; Key: {key}");
+        string ret = orig;
         if (LangStrings.ContainsKey(key, sheet))
         {
-            return LangStrings.Get(key, sheet);
+            ret = LangStrings.Get(key, sheet);
         }
-        return orig;
-    }
-
-    private static void SetInactive(GameObject go)
-    {
-        if (go == null) return;
-
-        UnityEngine.Object.DontDestroyOnLoad(go);
-        go.SetActive(false);
-    }
-
-    private static void SetInactive(UnityEngine.Object go)
-    {
-        if (go != null)
+        if (sheet == "UI" && key == "SOFHKP-CH2-USERNAME")
         {
-            UnityEngine.Object.DontDestroyOnLoad(go);
+            ret = Environment.UserName.ToUpperInvariant();
+        }
+        Log($"=> {ret}");
+        return ret;
+    }
+
+    private void DebugLogGo(GameObject go, string indent = "")
+    {
+        Log($"{indent}- GameObject '{go.name}' ({go.activeSelf}/{go.activeInHierarchy})");
+        foreach (Component component in go.GetComponents<Component>())
+        {
+            Log($"{indent}  - Component '{component.GetType()}'");
+        }
+        for (int i = 0; i < go.transform.childCount; i++)
+        {
+            DebugLogGo(go.transform.GetChild(i).gameObject, $"{indent}  ");
         }
     }
 }

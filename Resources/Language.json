@@ -1,6 +1,13 @@
 {
   "DE": {},
-  "EN": {},
+  "EN": {
+    "CP3": {
+      "UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2": "Stories of a HK player - Chapter 2"
+    },
+    "UI": {
+      "SOFHKP-CH2-HELLO": "HELLO"
+    }
+  },
   "ES": {},
   "FR": {},
   "IT": {},
