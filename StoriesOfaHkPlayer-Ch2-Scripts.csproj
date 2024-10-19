@@ -31,7 +31,6 @@
   <ItemGroup>
     <Folder Include="Resources" />
     <Folder Include="src" />
-    <Folder Include="src\MonoBehaviours" />
     <Folder Include="test" />
     <None Include=".gitignore" />
     <None Include="LICENSE" />
