@@ -26,14 +26,6 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
 
     public override string GetVersion() => Util.GetVersion(Assembly.GetExecutingAssembly());
 
-    public override List<ValueTuple<string, string>> GetPreloadNames()
-    {
-        return new List<(string, string)>()
-        {
-            ("Room_shop", "_SceneManager")
-        };
-    }
-
     private void LoadAssetbundles()
     {
         Assembly asm = Assembly.GetExecutingAssembly();
@@ -64,10 +56,40 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         InitCallbacks();
     }
 
-    public override void Initialize()
+    public override List<ValueTuple<string, string>> GetPreloadNames()
+    {
+        return new List<ValueTuple<string, string>>
+        {
+            new ValueTuple<string, string>("White_Palace_18", "White Palace Fly"),
+            new ValueTuple<string, string>("White_Palace_18", "saw_collection/wp_saw"),
+            new ValueTuple<string, string>("White_Palace_18", "saw_collection/wp_saw (2)"),
+            new ValueTuple<string, string>("White_Palace_18", "Soul Totem white_Infinte"),
+            new ValueTuple<string, string>("White_Palace_18", "Area Title Controller"),
+            new ValueTuple<string, string>("White_Palace_18", "glow response lore 1/Glow Response Object (11)"),
+            new ValueTuple<string, string>("White_Palace_18", "_SceneManager"),
+            new ValueTuple<string, string>("White_Palace_18", "Inspect Region"),
+            new ValueTuple<string, string>("White_Palace_18", "_Managers/PlayMaker Unity 2D"),
+            new ValueTuple<string, string>("White_Palace_18", "Music Region (1)"),
+            new ValueTuple<string, string>("White_Palace_17", "WP Lever"),
+            new ValueTuple<string, string>("White_Palace_17", "White_ Spikes"),
+            new ValueTuple<string, string>("White_Palace_17", "Cave Spikes Invis"),
+            new ValueTuple<string, string>("White_Palace_09", "Quake Floor"),
+            new ValueTuple<string, string>("Grimm_Divine", "Charm Holder"),
+            new ValueTuple<string, string>("White_Palace_03_hub", "WhiteBench"),
+            new ValueTuple<string, string>("Crossroads_07", "Breakable Wall_Silhouette"),
+            new ValueTuple<string, string>("Deepnest_East_Hornet_boss", "Hornet Outskirts Battle Encounter"),
+            new ValueTuple<string, string>("Deepnest_East_Hornet_boss", "Hornet Boss 2"),
+            new ValueTuple<string, string>("White_Palace_03_hub", "door1"),
+            new ValueTuple<string, string>("White_Palace_03_hub", "Dream Entry")
+        };
+    }
+
+    public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
     {
         Log("Initializing");
         Instance = this;
+
+        PrefabHolder.Preloaded(preloadedObjects);
 
         var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
         MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
@@ -141,7 +163,6 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
 
     private string OnLanguageGetHook(string key, string sheet, string orig)
     {
-        Log($"Sheet: {sheet}; Key: {key}");
         string ret = orig;
         if (LangStrings.ContainsKey(key, sheet))
         {
@@ -151,7 +172,6 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         {
             ret = Environment.UserName.ToUpperInvariant();
         }
-        Log($"=> {ret}");
         return ret;
     }
 

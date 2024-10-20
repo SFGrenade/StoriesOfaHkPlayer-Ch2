@@ -4,8 +4,14 @@
     "CP3": {
       "UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2": "Stories of a HK player - Chapter 2"
     },
+    "Titles": {
+      "SOFHKP-CH2-AreaTitle_SUPER": "",
+      "SOFHKP-CH2-AreaTitle_MAIN": "",
+      "SOFHKP-CH2-AreaTitle_SUB": ""
+    },
     "UI": {
-      "SOFHKP-CH2-HELLO": "HELLO"
+      "SOFHKP-CH2-HELLO": "HELLO",
+      "SOFHKP-CH2-USERNAME": "USER"
     }
   },
   "ES": {},
