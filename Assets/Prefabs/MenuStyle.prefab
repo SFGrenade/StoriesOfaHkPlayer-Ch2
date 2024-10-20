@@ -517,7 +517,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textField: {fileID: 6297387111127475626}
   sheetTitle: UI
-  textKey: SOFHKP-CH2-HELLO
+  textKey: SOFHKP_CH2_HELLO
 --- !u!1 &377608019992985493
 GameObject:
   m_ObjectHideFlags: 0
@@ -17114,7 +17114,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textField: {fileID: 5964365712866139403}
   sheetTitle: UI
-  textKey: SOFHKP-CH2-USERNAME
+  textKey: SOFHKP_CH2_USERNAME
 --- !u!1 &5534476230777013111
 GameObject:
   m_ObjectHideFlags: 0

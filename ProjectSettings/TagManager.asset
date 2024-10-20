@@ -5,6 +5,78 @@ TagManager:
   serializedVersion: 2
   tags:
   - TileMap
+  - GameManager
+  - BlackOverlay
+  - HeroBox
+  - Nail Attack
+  - RespawnPoint
+  - HeroWalkable
+  - SceneManager
+  - HeroLight
+  - Battle Gate
+  - Battle Scene
+  - CameraParent
+  - Terrain
+  - Canvas
+  - UIManager
+  - Hero Spell
+  - Enemy Message
+  - Orb Target
+  - Vignette
+  - RespawnTrigger
+  - Boss Corpse
+  - Heart Piece
+  - TransitionGate
+  - UI Soul Orb
+  - Shade Marker
+  - Hud Camera
+  - Cinematic
+  - Roar
+  - Stag Grate
+  - Platform
+  - Boss
+  - GeoCounter
+  - CameraTarget
+  - StagMapMarker
+  - HeroFootsteps
+  - Save Icon
+  - HeroLightMain
+  - Beta End
+  - Shop Window
+  - Journal Up Msg
+  - Charms Pane
+  - Inventory Top
+  - Charm Get Msg
+  - Acid
+  - Soul Vessels
+  - Teleplane
+  - Water Surface
+  - Relic Get Msg
+  - Fireball Safe
+  - Baby Centipede
+  - Knight Hatchling
+  - Dream Attack
+  - Infected Flag
+  - Ghost Warrior NPC
+  - Extra Tag
+  - Dream Plant
+  - Dream Orb
+  - Geo
+  - Sharp Shadow
+  - Boss Attack
+  - Nail Beam
+  - Grub Bottle
+  - Colosseum Manager
+  - Wall Breaker
+  - Ignore Hatchling
+  - Hatchling Magnet
+  - Spell Vulnerable
+  - Hopper
+  - Set Extrapolate
+  - Orbit Shield
+  - Grimmchild
+  - WindyGrass
+  - Weaverling
   layers:
   - Default
   - TransparentFX
@@ -34,10 +106,10 @@ TagManager:
   - Soft Terrain
   - Corpse
   - UGUI
-  - 
-  - 
+  - Hero Only
+  - ActiveRegion
   - Map Pin
-  - 
+  - Orbit Shield
   m_SortingLayers:
   - name: Default
     uniqueID: 0
