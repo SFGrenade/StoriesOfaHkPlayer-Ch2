@@ -13,7 +13,7 @@ public class PaperText : MonoBehaviour
         TextComponent.font = UIManager.instance.saveProfileTitle.GetComponent<UnityEngine.UI.Text>().font;
         if (!DisplayText)
         {
-            TextComponent.text = Language.Language.Get("SOFHKP-CH2-USERNAME", "UI");
+            TextComponent.text = Language.Language.Get("SOFHKP_CH2_USERNAME", "UI");
         }
     }
 
