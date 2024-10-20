@@ -36,9 +36,7 @@
         <None Include="README.md" />
     </ItemGroup>
     <ItemGroup>
-        <EmbeddedResource Include="Resources/Language.json" />
-        <EmbeddedResource Include="Resources/storiesofahkplayer_ch2" />
-        <EmbeddedResource Include="Resources/storiesofahkplayer_ch2_scenes" />
+        <EmbeddedResource Include="Resources/*" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="../SFCore/SFCore.csproj" />

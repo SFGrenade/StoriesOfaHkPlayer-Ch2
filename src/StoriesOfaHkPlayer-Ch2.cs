@@ -10,8 +10,12 @@ using UnityEngine.Audio;
 using UObject = UnityEngine.Object;
 using USceneManager = UnityEngine.SceneManagement.SceneManager;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using Modding.Patches;
+using Newtonsoft.Json;
 using SFCore.Utils;
+using UnityEngine.UI;
 
 namespace StoriesOfaHkPlayer_Ch2;
 
@@ -37,6 +41,7 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
                 _abAssets = AssetBundle.LoadFromStream(s);
             }
         }
+
         if (_abScenes == null)
         {
             using Stream s = asm.GetManifestResourceStream("StoriesOfaHkPlayer_Ch2.Resources.storiesofahkplayer_ch2_scenes");
@@ -103,26 +108,31 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         On.AudioManager.ApplyMusicCue += LoadMenuMusic;
 
         ModHooks.LanguageGetHook += OnLanguageGetHook;
+
+        ChangeMainMenuStartGameButton();
     }
 
-    private void LoadMenuMusic(On.AudioManager.orig_ApplyMusicCue orig, AudioManager self, MusicCue musicCue, float delayTime, float transitionTime, bool applySnapshot)
+    private void LoadMenuMusic(On.AudioManager.orig_ApplyMusicCue orig, AudioManager self, MusicCue musicCue, float delayTime, float transitionTime,
+        bool applySnapshot)
     {
         // Insert Custom Audio into main MusicCue
-        var infos = (MusicCue.MusicChannelInfo[]) musicCue.GetType().GetField("channelInfos", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(musicCue);
-            
+        var infos = (MusicCue.MusicChannelInfo[])musicCue.GetType().GetField("channelInfos", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(musicCue);
+
         var origAudio = infos[0].GetAttr<MusicCue.MusicChannelInfo, AudioClip>("clip");
         if (origAudio != null && origAudio.name.Equals("Title"))
         {
-            infos[(int) MusicChannels.Tension] = new MusicCue.MusicChannelInfo();
-            infos[(int) MusicChannels.Tension].SetAttr("clip", _abAssets.LoadAsset<AudioClip>("Ch2-Menu-Music-Wrapped"));
+            infos[(int)MusicChannels.Tension] = new MusicCue.MusicChannelInfo();
+            infos[(int)MusicChannels.Tension].SetAttr("clip", _abAssets.LoadAsset<AudioClip>("Ch2-Menu-Music-Wrapped"));
             // Don't sync this audio with the not-as-long normal main menu theme
-            infos[(int) MusicChannels.Tension].SetAttr("sync", MusicChannelSync.ExplicitOff);
+            infos[(int)MusicChannels.Tension].SetAttr("sync", MusicChannelSync.ExplicitOff);
         }
+
         musicCue.GetType().GetField("channelInfos", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(musicCue, infos);
         orig(self, musicCue, delayTime, transitionTime, applySnapshot);
     }
 
-    private (string languageString, GameObject styleGo, int titleIndex, string unlockKey, string[] achievementKeys, MenuStyles.MenuStyle.CameraCurves cameraCurves, AudioMixerSnapshot musicSnapshot) AddMenuStyle(MenuStyles self)
+    private (string languageString, GameObject styleGo, int titleIndex, string unlockKey, string[] achievementKeys, MenuStyles.MenuStyle.CameraCurves
+        cameraCurves, AudioMixerSnapshot musicSnapshot) AddMenuStyle(MenuStyles self)
     {
         GameObject menuStyleGo = GameObject.Instantiate(_abAssets.LoadAsset<GameObject>("MenuStyle"));
         menuStyleGo.name = "StoriesOfaHkPlayer_Ch2 Style";
@@ -132,8 +142,10 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         menuStyleGo.SetActive(false);
 
         menuStyleGo.Find("Canvas").GetComponent<Canvas>().worldCamera = GameCameras.instance.mainCamera;
-        menuStyleGo.Find("Wind-Effect-1").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader = Shader.Find(menuStyleGo.Find("Wind-Effect-1").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader.name);
-        menuStyleGo.Find("Wind-Effect-2").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader = Shader.Find(menuStyleGo.Find("Wind-Effect-2").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader.name);
+        menuStyleGo.Find("Wind-Effect-1").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader =
+            Shader.Find(menuStyleGo.Find("Wind-Effect-1").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader.name);
+        menuStyleGo.Find("Wind-Effect-2").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader =
+            Shader.Find(menuStyleGo.Find("Wind-Effect-2").GetComponent<ParticleSystemRenderer>().sharedMaterial.shader.name);
 
         foreach (MenuStyles.MenuStyle style in self.styles)
         {
@@ -158,7 +170,8 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         cameraCurves.blueChannel.AddKey(new Keyframe(1f, 1f));
 
         menuStyleGo.SetActive(true);
-        return ("UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2", menuStyleGo, -1, "", null, cameraCurves, Resources.FindObjectsOfTypeAll<AudioMixer>().First(x => x.name == "Music").FindSnapshot("Tension Only"));
+        return ("UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2", menuStyleGo, -1, "", null, cameraCurves,
+            Resources.FindObjectsOfTypeAll<AudioMixer>().First(x => x.name == "Music").FindSnapshot("Tension Only"));
     }
 
     private string OnLanguageGetHook(string key, string sheet, string orig)
@@ -167,12 +180,81 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         if (LangStrings.ContainsKey(key, sheet))
         {
             ret = LangStrings.Get(key, sheet);
+            ret = ret.Replace("{USERNAME}", Environment.UserName.ToUpperInvariant());
         }
-        if (sheet == "UI" && key == "SOFHKP-CH2-USERNAME")
-        {
-            ret = Environment.UserName.ToUpperInvariant();
-        }
+
         return ret;
+    }
+
+    private void ChangeMainMenuStartGameButton()
+    {
+        On.UIManager.UIMainStartGame += UIManagerOnUIMainStartGame;
+        On.UIManager.StartNewGame += UIManagerOnStartNewGame;
+        On.GameManager.LoadGame += GameManagerOnLoadGame;
+        On.DesktopPlatform.ReadSaveSlot += DesktopPlatformOnReadSaveSlot;
+    }
+
+    private void UIManagerOnUIMainStartGame(On.UIManager.orig_UIMainStartGame orig, UIManager self)
+    {
+        self.GetAttr<UIManager, GameManager>("gm").profileID = -1;
+        self.StartNewGame(false, false);
+    }
+
+    private void UIManagerOnStartNewGame(On.UIManager.orig_StartNewGame orig, UIManager self, bool permaDeath, bool bossRush)
+    {
+        if (self.GetAttr<UIManager, GameManager>("gm").profileID == -1)
+        {
+            self.SetAttr<UIManager, bool>("permaDeath", permaDeath);
+            self.SetAttr<UIManager, bool>("bossRush", bossRush);
+            self.GetAttr<UIManager, InputHandler>("ih").StopUIInput();
+            self.GetAttr<UIManager, MenuAudioController>("uiAudioPlayer").PlayStartGame();
+
+            self.GetAttr<UIManager, InputHandler>("ih").StartUIInput();
+
+            self.GetAttr<UIManager, GameManager>("gm").LoadGameFromUI(self.GetAttr<UIManager, GameManager>("gm").profileID);
+            self.GetAttr<UIManager, InputHandler>("ih").StopUIInput();
+            self.GetAttr<UIManager, MenuAudioController>("uiAudioPlayer").PlayStartGame();
+            MenuStyles.Instance.StopAudio();
+            self.StartCoroutine(self.HideCurrentMenu());
+        }
+        else
+        {
+            orig(self, permaDeath, bossRush);
+        }
+    }
+
+    private void GameManagerOnLoadGame(On.GameManager.orig_LoadGame orig, GameManager self, int saveSlot, Action<bool> callback)
+    {
+        bool origValue = self.gameConfig.useSaveEncryption;
+        if (saveSlot == -1)
+        {
+            self.gameConfig.useSaveEncryption = false;
+        }
+
+        orig(self, saveSlot, callback);
+
+        if (saveSlot == -1)
+        {
+            self.gameConfig.useSaveEncryption = origValue;
+        }
+    }
+
+    private void DesktopPlatformOnReadSaveSlot(On.DesktopPlatform.orig_ReadSaveSlot orig, DesktopPlatform self, int slotIndex, Action<byte[]> callback)
+    {
+        if (slotIndex == -1)
+        {
+            Assembly asm = Assembly.GetExecutingAssembly();
+            using Stream s = asm.GetManifestResourceStream("StoriesOfaHkPlayer_Ch2.Resources.Save.json");
+
+            using MemoryStream ms = new MemoryStream();
+            s.CopyTo(ms);
+
+            callback(ms.ToArray());
+        }
+        else
+        {
+            orig(self, slotIndex, callback);
+        }
     }
 
     private void DebugLogGo(GameObject go, string indent = "")
@@ -182,6 +264,7 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         {
             Log($"{indent}  - Component '{component.GetType()}'");
         }
+
         for (int i = 0; i < go.transform.childCount; i++)
         {
             DebugLogGo(go.transform.GetChild(i).gameObject, $"{indent}  ");
