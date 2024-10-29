@@ -13,13 +13,15 @@ using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using Modding.Patches;
+using Modding.Utils;
 using Newtonsoft.Json;
+using SFCore.Generics;
 using SFCore.Utils;
 using UnityEngine.UI;
 
 namespace StoriesOfaHkPlayer_Ch2;
 
-public class StoriesOfaHkPlayer_Ch2 : Mod
+public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 {
     public static StoriesOfaHkPlayer_Ch2 Instance;
 
@@ -29,6 +31,34 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
     private AssetBundle _abScenes = null;
 
     public override string GetVersion() => Util.GetVersion(Assembly.GetExecutingAssembly());
+
+    public override List<ValueTuple<string, string>> GetPreloadNames()
+    {
+        return new List<ValueTuple<string, string>>
+        {
+            new ValueTuple<string, string>("White_Palace_18", "White Palace Fly"),
+            new ValueTuple<string, string>("White_Palace_18", "saw_collection/wp_saw"),
+            new ValueTuple<string, string>("White_Palace_18", "saw_collection/wp_saw (2)"),
+            new ValueTuple<string, string>("White_Palace_18", "Soul Totem white_Infinte"),
+            new ValueTuple<string, string>("White_Palace_18", "Area Title Controller"),
+            new ValueTuple<string, string>("White_Palace_18", "glow response lore 1/Glow Response Object (11)"),
+            new ValueTuple<string, string>("White_Palace_18", "_SceneManager"),
+            new ValueTuple<string, string>("White_Palace_18", "Inspect Region"),
+            new ValueTuple<string, string>("White_Palace_18", "_Managers/PlayMaker Unity 2D"),
+            new ValueTuple<string, string>("White_Palace_18", "Music Region (1)"),
+            new ValueTuple<string, string>("White_Palace_17", "WP Lever"),
+            new ValueTuple<string, string>("White_Palace_17", "White_ Spikes"),
+            new ValueTuple<string, string>("White_Palace_17", "Cave Spikes Invis"),
+            new ValueTuple<string, string>("White_Palace_09", "Quake Floor"),
+            new ValueTuple<string, string>("Grimm_Divine", "Charm Holder"),
+            new ValueTuple<string, string>("White_Palace_03_hub", "WhiteBench"),
+            new ValueTuple<string, string>("Crossroads_07", "Breakable Wall_Silhouette"),
+            new ValueTuple<string, string>("Deepnest_East_Hornet_boss", "Hornet Outskirts Battle Encounter"),
+            new ValueTuple<string, string>("Deepnest_East_Hornet_boss", "Hornet Boss 2"),
+            new ValueTuple<string, string>("White_Palace_03_hub", "door1"),
+            new ValueTuple<string, string>("White_Palace_03_hub", "Dream Entry")
+        };
+    }
 
     private void LoadAssetbundles()
     {
@@ -61,34 +91,6 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         InitCallbacks();
     }
 
-    public override List<ValueTuple<string, string>> GetPreloadNames()
-    {
-        return new List<ValueTuple<string, string>>
-        {
-            new ValueTuple<string, string>("White_Palace_18", "White Palace Fly"),
-            new ValueTuple<string, string>("White_Palace_18", "saw_collection/wp_saw"),
-            new ValueTuple<string, string>("White_Palace_18", "saw_collection/wp_saw (2)"),
-            new ValueTuple<string, string>("White_Palace_18", "Soul Totem white_Infinte"),
-            new ValueTuple<string, string>("White_Palace_18", "Area Title Controller"),
-            new ValueTuple<string, string>("White_Palace_18", "glow response lore 1/Glow Response Object (11)"),
-            new ValueTuple<string, string>("White_Palace_18", "_SceneManager"),
-            new ValueTuple<string, string>("White_Palace_18", "Inspect Region"),
-            new ValueTuple<string, string>("White_Palace_18", "_Managers/PlayMaker Unity 2D"),
-            new ValueTuple<string, string>("White_Palace_18", "Music Region (1)"),
-            new ValueTuple<string, string>("White_Palace_17", "WP Lever"),
-            new ValueTuple<string, string>("White_Palace_17", "White_ Spikes"),
-            new ValueTuple<string, string>("White_Palace_17", "Cave Spikes Invis"),
-            new ValueTuple<string, string>("White_Palace_09", "Quake Floor"),
-            new ValueTuple<string, string>("Grimm_Divine", "Charm Holder"),
-            new ValueTuple<string, string>("White_Palace_03_hub", "WhiteBench"),
-            new ValueTuple<string, string>("Crossroads_07", "Breakable Wall_Silhouette"),
-            new ValueTuple<string, string>("Deepnest_East_Hornet_boss", "Hornet Outskirts Battle Encounter"),
-            new ValueTuple<string, string>("Deepnest_East_Hornet_boss", "Hornet Boss 2"),
-            new ValueTuple<string, string>("White_Palace_03_hub", "door1"),
-            new ValueTuple<string, string>("White_Palace_03_hub", "Dream Entry")
-        };
-    }
-
     public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
     {
         Log("Initializing");
@@ -99,6 +101,8 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
         MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
 
+        GameManager.instance.StartCoroutine(WaitForTitle());
+
         Log("Initialized");
     }
 
@@ -107,10 +111,34 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
         MenuStyleHelper.AddMenuStyleHook += AddMenuStyle;
         On.AudioManager.ApplyMusicCue += LoadMenuMusic;
 
+        ModHooks.GetPlayerBoolHook += OnGetPlayerBoolHook;
+        ModHooks.SetPlayerBoolHook += OnSetPlayerBoolHook;
+        ModHooks.GetPlayerIntHook += OnGetPlayerIntHook;
+        ModHooks.SetPlayerIntHook += OnSetPlayerIntHook;
+        ModHooks.ApplicationQuitHook += SaveGlobalSettings;
         ModHooks.LanguageGetHook += OnLanguageGetHook;
 
         ChangeMainMenuStartGameButton();
     }
+
+    private IEnumerator WaitForTitle()
+    {
+        yield return new WaitUntil(() => GameObject.Find("LogoTitle") != null);
+        UIManager.EditMenus += GiveUiTextOutline;
+    }
+
+    private void GiveUiTextOutline()
+    {
+        foreach(var item in UIManager.instance.gameObject.GetComponentsInChildren<Text>(true))
+        {
+            var outline = item.gameObject.GetOrAddComponent<Outline>();
+            outline.effectColor = Color.black;
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+        }
+        UIManager.EditMenus -= GiveUiTextOutline;
+    }
+
+    #region Menu Style stuff
 
     private void LoadMenuMusic(On.AudioManager.orig_ApplyMusicCue orig, AudioManager self, MusicCue musicCue, float delayTime, float transitionTime,
         bool applySnapshot)
@@ -174,17 +202,9 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
             Resources.FindObjectsOfTypeAll<AudioMixer>().First(x => x.name == "Music").FindSnapshot("Tension Only"));
     }
 
-    private string OnLanguageGetHook(string key, string sheet, string orig)
-    {
-        string ret = orig;
-        if (LangStrings.ContainsKey(key, sheet))
-        {
-            ret = LangStrings.Get(key, sheet);
-            ret = ret.Replace("{USERNAME}", Environment.UserName.ToUpperInvariant());
-        }
+    #endregion Menu Style stuff
 
-        return ret;
-    }
+    #region Main Menu start button stuff
 
     private void ChangeMainMenuStartGameButton()
     {
@@ -256,6 +276,73 @@ public class StoriesOfaHkPlayer_Ch2 : Mod
             orig(self, slotIndex, callback);
         }
     }
+
+    #endregion Main Menu start button stuff
+
+    #region Hooks
+
+    private string OnLanguageGetHook(string key, string sheet, string orig)
+    {
+        string ret = orig;
+        if (LangStrings.ContainsKey(key, sheet))
+        {
+            ret = LangStrings.Get(key, sheet);
+            ret = ret.Replace("{USERNAME}", Environment.UserName.ToUpperInvariant());
+        }
+
+        return ret;
+    }
+
+    private bool OnGetPlayerBoolHook(string target, bool orig)
+    {
+        var tmpField = ReflectionHelper.GetFieldInfo(typeof(SettingsClass), target);
+        if (tmpField != null)
+        {
+            return (bool)tmpField.GetValue(SaveSettings);
+        }
+
+        if (target == "alwaysFalse")
+        {
+            return false;
+        }
+
+        return orig;
+    }
+
+    private bool OnSetPlayerBoolHook(string target, bool orig)
+    {
+        var tmpField = ReflectionHelper.GetFieldInfo(typeof(SettingsClass), target);
+        if (tmpField != null)
+        {
+            tmpField.SetValue(SaveSettings, orig);
+        }
+
+        return orig;
+    }
+
+    private int OnGetPlayerIntHook(string target, int orig)
+    {
+        var tmpField = ReflectionHelper.GetFieldInfo(typeof(SettingsClass), target);
+        if (tmpField != null)
+        {
+            return (int)tmpField.GetValue(SaveSettings);
+        }
+
+        return orig;
+    }
+
+    private int OnSetPlayerIntHook(string target, int orig)
+    {
+        var tmpField = ReflectionHelper.GetFieldInfo(typeof(SettingsClass), target);
+        if (tmpField != null)
+        {
+            tmpField.SetValue(SaveSettings, orig);
+        }
+
+        return orig;
+    }
+
+    #endregion Hooks
 
     private void DebugLogGo(GameObject go, string indent = "")
     {
