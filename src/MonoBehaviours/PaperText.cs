@@ -5,6 +5,8 @@ namespace StoriesOfaHkPlayer_Ch2.MonoBehaviours;
 
 public class PaperText : MonoBehaviour
 {
-    public bool DisplayText = false;
+    public bool DisplayUsername = false;
     public UnityEngine.UI.Text TextComponent;
+    public bool FadeOutWhenPdBoolTrue;
+    public string PdBoolName;
 }
