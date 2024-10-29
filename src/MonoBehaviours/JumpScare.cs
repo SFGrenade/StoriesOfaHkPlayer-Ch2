@@ -10,4 +10,5 @@ public class JumpScare : MonoBehaviour
     public AudioClip AudioClipToPlay;
     public float FadeInTime = 0.1f;
     public float FadeOutTime = 1.0f;
+    public bool IsFinal = false;
 }
