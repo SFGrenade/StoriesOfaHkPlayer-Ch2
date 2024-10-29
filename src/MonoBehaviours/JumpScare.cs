@@ -12,6 +12,7 @@ public class JumpScare : MonoBehaviour
     public AudioClip AudioClipToPlay;
     public float FadeInTime = 0.1f;
     public float FadeOutTime = 1.0f;
+    public bool IsFinal = false;
 
     private Color srColor;
     private IEnumerator jumpScareCoroutine;
@@ -64,6 +65,13 @@ public class JumpScare : MonoBehaviour
             yield return null;
         }
         // who knows what to do once we are fully faded in
+        if (IsFinal)
+        {
+            // quit the game
+            UIManager.instance.QuitGame();
+            //Application.Quit();
+            yield break;
+        }
         currentTime = 0.0f;
         while (currentTime < FadeOutTime)
         {

@@ -288,6 +288,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
         {
             ret = LangStrings.Get(key, sheet);
             ret = ret.Replace("{USERNAME}", Environment.UserName.ToUpperInvariant());
+            // Log($"'{sheet}'/'{key}' => '{ret}'");
         }
 
         return ret;
