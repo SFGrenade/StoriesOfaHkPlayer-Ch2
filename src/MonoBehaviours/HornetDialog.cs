@@ -74,7 +74,7 @@ public class HornetDialog : MonoBehaviour
         encounterFsm.RemoveAction("Blizzard Start", 6);
         encounterFsm.RemoveAction("Blizzard Start", 5);
         encounterFsm.RemoveAction("Blizzard Start", 4);
-        // // entry 3 is WAIT action
+        encounterFsm.GetAction<Wait>("Blizzard Start", 3).time = 1f;
         // encounterFsm.RemoveAction("Blizzard Start", 2);
         // encounterFsm.RemoveAction("Blizzard Start", 1);
         // encounterFsm.RemoveAction("Blizzard Start", 0);
