@@ -29,6 +29,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     private AssetBundle _abAssets = null;
     private AssetBundle _abScenes = null;
+    private int _customLogoId = 0;
 
     public override string GetVersion() => Util.GetVersion(Assembly.GetExecutingAssembly());
 
@@ -106,8 +107,33 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
         Log("Initialized");
     }
 
+    private Sprite LoadSprite(string name)
+    {
+        Assembly asm = Assembly.GetExecutingAssembly();
+        using (Stream s = asm.GetManifestResourceStream($"StoriesOfaHkPlayer_Ch2.Resources.{name}.png"))
+        {
+            if (s != null)
+            {
+                byte[] buffer = new byte[s.Length];
+                s.Read(buffer, 0, buffer.Length);
+                s.Dispose();
+
+                //Create texture from bytes
+                var tex = new Texture2D(2, 2);
+
+                tex.LoadImage(buffer, true);
+
+                // Create sprite from texture
+                // Split is to cut off the DreamKing.Resources. and the .png
+                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 64);
+            }
+        }
+        return null;
+    }
+
     private void InitCallbacks()
     {
+        _customLogoId = TitleLogoHelper.AddLogo(LoadSprite("SOAHKP_CH2_Test_01"));
         MenuStyleHelper.AddMenuStyleHook += AddMenuStyle;
         On.AudioManager.ApplyMusicCue += LoadMenuMusic;
 
@@ -198,7 +224,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
         cameraCurves.blueChannel.AddKey(new Keyframe(1f, 1f));
 
         menuStyleGo.SetActive(true);
-        return ("UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2", menuStyleGo, -1, "", null, cameraCurves,
+        return ("UI_MENU_STYLE_STORIESOFAHKPLAYER_CH2", menuStyleGo, _customLogoId, "", null, cameraCurves,
             Resources.FindObjectsOfTypeAll<AudioMixer>().First(x => x.name == "Music").FindSnapshot("Tension Only"));
     }
 
