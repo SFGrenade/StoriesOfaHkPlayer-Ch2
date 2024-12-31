@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using SFCore.Utils;
+using UnityEngine;
 
 namespace StoriesOfaHkPlayer_Ch2.MonoBehaviours.Patcher;
 
@@ -23,23 +24,22 @@ class PatchAreaTitleController : MonoBehaviour
         atc.transform.localScale = transform.lossyScale;
 
         PlayMakerFSM atcFsm = atc.LocateMyFSM("Area Title Controller");
-        atcFsm.FsmVariables.GetFsmFloat("Unvisited Pause").Value = Pause;
-        atcFsm.FsmVariables.GetFsmFloat("Visited Pause").Value = Pause;
+        atcFsm.GetFloatVariable("Unvisited Pause").Value = Pause;
+        atcFsm.GetFloatVariable("Visited Pause").Value = Pause;
 
-        atcFsm.FsmVariables.GetFsmBool("Always Visited").Value = AlwaysVisited;
-        atcFsm.FsmVariables.GetFsmBool("Display Right").Value = DisplayRight;
-        atcFsm.FsmVariables.GetFsmBool("Only On Revisit").Value = OnlyOnRevisit;
-        atcFsm.FsmVariables.GetFsmBool("Sub Area").Value = SubArea;
-        atcFsm.FsmVariables.GetFsmBool("Visited Area").Value = PlayerData.instance.GetBool("SFGrenadeTestOfTeamworkVisitedTestOfTeamwork");
-        atcFsm.FsmVariables.GetFsmBool("Wait for Trigger").Value = WaitForTrigger;
+        atcFsm.GetBoolVariable("Always Visited").Value = AlwaysVisited;
+        atcFsm.GetBoolVariable("Display Right").Value = DisplayRight;
+        atcFsm.GetBoolVariable("Only On Revisit").Value = OnlyOnRevisit;
+        atcFsm.GetBoolVariable("Sub Area").Value = SubArea;
+        atcFsm.GetBoolVariable("Visited Area").Value = PlayerData.instance.GetBool(VisitedBool);
+        atcFsm.GetBoolVariable("Wait for Trigger").Value = WaitForTrigger;
 
-        atcFsm.FsmVariables.GetFsmString("Area Event").Value = AreaEvent;
-        atcFsm.FsmVariables.GetFsmString("Visited Bool").Value = VisitedBool;
+        atcFsm.GetStringVariable("Area Event").Value = AreaEvent;
+        atcFsm.GetStringVariable("Visited Bool").Value = VisitedBool;
 
-        atcFsm.FsmVariables.GetFsmGameObject("Area Title").Value = GameObject.Find("Area Title");
+        atcFsm.GetGameObjectVariable("Area Title").Value = GameObject.Find("Area Title");
 
         atc.AddComponent<NonBouncer>();
-
         atc.SetActive(true);
 
         Destroy(gameObject);
