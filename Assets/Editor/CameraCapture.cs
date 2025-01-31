@@ -9,27 +9,53 @@ public class CameraCapture : MonoBehaviour
     [MenuItem("Camera/Render View")]
     static public void Capture()
     {
-        Camera camera = GameObject.FindObjectOfType<Camera>();
+        int width = 1920 * 2 * 2;
+        int height = 1080 * 2 * 2;
 
-        if (camera.targetTexture == null)
+        // Create a render texture
+        RenderTexture renderOnThis = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+        RenderTexture origActiveRenderTexture = RenderTexture.active;
+
+        RenderTexture.active = renderOnThis;
+
+        // Clear the render texture before rendering cameras
+        GL.Clear(true, true, Color.clear);
+
+        // Get all cameras and sort by depth (ascending order)
+        Camera[] cameras = GameObject.FindObjectsOfType<Camera>();
+        System.Array.Sort(cameras, (a, b) => a.depth.CompareTo(b.depth));
+
+        // Render each camera on top of the previous ones
+        foreach (var camera in cameras)
         {
-            camera.targetTexture = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32);
+            RenderTexture origTargetTexture = camera.targetTexture;
+            camera.targetTexture = renderOnThis;
+            camera.Render();
+            camera.targetTexture = origTargetTexture;
         }
 
-        RenderTexture activeRenderTexture = RenderTexture.active;
-        RenderTexture.active = camera.targetTexture;
-
-        camera.Render();
-
-        Texture2D image = new Texture2D(camera.targetTexture.width, camera.targetTexture.height);
-        image.ReadPixels(new Rect(0, 0, camera.targetTexture.width, camera.targetTexture.height), 0, 0);
+        // Read pixels from render texture
+        Texture2D image = new Texture2D(renderOnThis.width, renderOnThis.height, TextureFormat.ARGB32, false);
+        image.ReadPixels(new Rect(0, 0, renderOnThis.width, renderOnThis.height), 0, 0);
         image.Apply();
-        RenderTexture.active = activeRenderTexture;
 
+        // Restore original active render texture
+        RenderTexture.active = origActiveRenderTexture;
+        renderOnThis.Release();
+
+        // Save as PNG
         byte[] bytes = image.EncodeToPNG();
         DestroyImmediate(image);
 
-        File.WriteAllBytes("E:\\Documents\\Hollow Knight Stuff\\Unity-Projects\\__Exports\\" + fileCounter + ".png", bytes);
+        // Cleanup
+        DestroyImmediate(renderOnThis);
+
+        // Ensure directory exists
+        string directory = "Screenshots";
+        if (!Directory.Exists(directory))
+            Directory.CreateDirectory(directory);
+
+        File.WriteAllBytes($"{directory}/{fileCounter}.png", bytes);
         fileCounter++;
     }
 }
