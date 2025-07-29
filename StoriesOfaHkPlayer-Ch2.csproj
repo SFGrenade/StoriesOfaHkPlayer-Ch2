@@ -27,6 +27,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="$(HollowKnightRefs)/*.dll" />
+    <Reference Condition="!Exists('../StoriesOfaHkPlayer-Ch1/StoriesOfaHkPlayer-Ch1.csproj')" Include="$(HollowKnightRefs)/Mods/StoriesOfaHkPlayer-Ch1/StoriesOfaHkPlayer_Ch1.dll" />
     <Reference Condition="!Exists('../SFCore/SFCore.csproj')" Include="$(HollowKnightRefs)/Mods/SFCore/SFCore.dll" />
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +43,7 @@
     <EmbeddedResource Include="Resources/*" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Condition="Exists('../StoriesOfaHkPlayer-Ch1/StoriesOfaHkPlayer-Ch1.csproj')" Include="../StoriesOfaHkPlayer-Ch1/StoriesOfaHkPlayer-Ch1.csproj" />
     <ProjectReference Condition="Exists('../SFCore/SFCore.csproj')" Include="../SFCore/SFCore.csproj" />
   </ItemGroup>
 </Project>

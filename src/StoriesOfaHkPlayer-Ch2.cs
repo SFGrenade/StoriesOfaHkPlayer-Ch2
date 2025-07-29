@@ -99,10 +99,24 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
         PrefabHolder.Preloaded(preloadedObjects);
 
-        var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
-        MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
+        bool ch1Detected = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 1") is Mod;
+        bool ch2Detected = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 2") is Mod;
+        bool ch3Detected = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 3") is Mod;
+        Log($"Detected Chapter 1: {ch1Detected}");
+        Log($"Detected Chapter 2: {ch2Detected}");
+        Log($"Detected Chapter 3: {ch3Detected}");
 
-        GameManager.instance.StartCoroutine(WaitForTitle());
+        var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
+        if (ch1Detected)
+        {
+            tmpStyle.enabled = false;
+            AdaptToCh1();
+        }
+        else
+        {
+            MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
+            GameManager.instance.StartCoroutine(WaitForTitle());
+        }
 
         Log("Initialized");
     }
@@ -128,6 +142,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
                 return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 64);
             }
         }
+
         return null;
     }
 
@@ -155,12 +170,13 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     private void GiveUiTextOutline()
     {
-        foreach(var item in UIManager.instance.gameObject.GetComponentsInChildren<Text>(true))
+        foreach (var item in UIManager.instance.gameObject.GetComponentsInChildren<Text>(true))
         {
             var outline = item.gameObject.GetOrAddComponent<Outline>();
             outline.effectColor = Color.black;
             outline.effectDistance = new Vector2(1.5f, -1.5f);
         }
+
         UIManager.EditMenus -= GiveUiTextOutline;
     }
 
@@ -304,6 +320,26 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
     }
 
     #endregion Main Menu start button stuff
+
+    internal static void EndCallback()
+    {
+        UIManager.instance.QuitGame();
+        //Application.Quit();
+    }
+
+    public void SetEndCallback(Action callback)
+    {
+        MonoBehaviours.JumpScare.EndCallback = callback;
+    }
+
+    private void AdaptToCh1()
+    {
+        var modInstance = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 1") as StoriesOfaHkPlayer_Ch1.StoriesOfaHkPlayer_Ch1;
+        modInstance.SetEndCallback((source) =>
+        {
+            UIManager.instance.UIMainStartGame();
+        });
+    }
 
     #region Hooks
 

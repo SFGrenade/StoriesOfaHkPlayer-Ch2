@@ -18,6 +18,8 @@ public class JumpScare : MonoBehaviour
     private IEnumerator jumpScareCoroutine;
     private GameObject customAudioSource;
 
+    internal static Action EndCallback = StoriesOfaHkPlayer_Ch2.EndCallback;
+
     private void Start()
     {
         srColor = Sprite.color;
@@ -67,9 +69,7 @@ public class JumpScare : MonoBehaviour
         // who knows what to do once we are fully faded in
         if (IsFinal)
         {
-            // quit the game
-            UIManager.instance.QuitGame();
-            //Application.Quit();
+            EndCallback();
             yield break;
         }
         currentTime = 0.0f;
