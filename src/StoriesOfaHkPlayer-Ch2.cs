@@ -10,11 +10,8 @@ using UnityEngine.Audio;
 using UObject = UnityEngine.Object;
 using USceneManager = UnityEngine.SceneManagement.SceneManager;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using Modding.Patches;
 using Modding.Utils;
-using Newtonsoft.Json;
 using SFCore.Generics;
 using SFCore.Utils;
 using UnityEngine.UI;
@@ -99,15 +96,22 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
         PrefabHolder.Preloaded(preloadedObjects);
 
-        bool ch1Detected = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 1") is Mod;
-        bool ch2Detected = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 2") is Mod;
-        bool ch3Detected = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 3") is Mod;
-        Log($"Detected Chapter 1: {ch1Detected}");
-        Log($"Detected Chapter 2: {ch2Detected}");
-        Log($"Detected Chapter 3: {ch3Detected}");
+        bool anyDepInstalled = CheckForAnyChapterDep(2);
+        Log($"Any prev chapter installed: {anyDepInstalled}");
+        bool depsCorrect = CheckChapterDeps(2);
+        Log($"Correct prev chapters: {depsCorrect}");
 
         var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
-        if (ch1Detected)
+        if (anyDepInstalled && !depsCorrect)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                LogError($"ENABLE CHAPTERS EITHER BY ITSELF, WITH ALL OTHER CHAPTERS OR AT LEAST THE PREVIOUS CHAPTER, DON'T SKIP OUT CHAPTERS IN THE MIDDLE!!!");
+            }
+
+            tmpStyle.enabled = false;
+        }
+        else if (anyDepInstalled && depsCorrect)
         {
             tmpStyle.enabled = false;
             AdaptToCh1();
@@ -165,6 +169,29 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
     private IEnumerator WaitForTitle()
     {
         yield return new WaitUntil(() => GameObject.Find("LogoTitle") != null);
+
+        // change main menu button to refer to `StartGameReceiver(instance).CustomStartMain()`
+        MonoBehaviours.StartGameReceiver newReceiver = UIManager.instance.gameObject.AddComponent<MonoBehaviours.StartGameReceiver>();
+        UnityEngine.EventSystems.EventTrigger startGameEventTrigger = UIManager.instance.mainMenuButtons.startButton.GetComponent<UnityEngine.EventSystems.EventTrigger>();
+        foreach (UnityEngine.EventSystems.EventTrigger.Entry t in startGameEventTrigger.triggers)
+        {
+            FieldInfo pcFi = Modding.ReflectionHelper.GetFieldInfo(typeof(UnityEngine.Events.UnityEventBase), "m_PersistentCalls", true);
+            // internal class
+            object pcGroup = pcFi.GetValue(t.callback);
+            FieldInfo pcgCallsFi = Modding.ReflectionHelper.GetFieldInfo(pcGroup.GetType(), "m_Calls", true);
+            object pcgCallsRaw = pcgCallsFi.GetValue(pcGroup);
+            Log($"pcgCallsRaw: {pcgCallsRaw} with type: {pcgCallsRaw.GetType()}");
+            IEnumerable<object> pcgCalls = Enumerable.OfType<object>((IEnumerable<object>)pcgCallsRaw);
+            foreach (object call in pcgCalls)
+            {
+                Log($"call: {call} with type: {call.GetType()}");
+                FieldInfo pcTargetFi = Modding.ReflectionHelper.GetFieldInfo(call.GetType(), "m_Target", true);
+                pcTargetFi.SetValue(call, newReceiver);
+                FieldInfo pcMethodFi = Modding.ReflectionHelper.GetFieldInfo(call.GetType(), "m_MethodName", true);
+                pcMethodFi.SetValue(call, "CustomStartMain");
+            }
+        }
+
         UIManager.EditMenus += GiveUiTextOutline;
     }
 
@@ -250,16 +277,9 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     private void ChangeMainMenuStartGameButton()
     {
-        On.UIManager.UIMainStartGame += UIManagerOnUIMainStartGame;
         On.UIManager.StartNewGame += UIManagerOnStartNewGame;
         On.GameManager.LoadGame += GameManagerOnLoadGame;
         On.DesktopPlatform.ReadSaveSlot += DesktopPlatformOnReadSaveSlot;
-    }
-
-    private void UIManagerOnUIMainStartGame(On.UIManager.orig_UIMainStartGame orig, UIManager self)
-    {
-        self.GetAttr<UIManager, GameManager>("gm").profileID = -1;
-        self.StartNewGame(false, false);
     }
 
     private void UIManagerOnStartNewGame(On.UIManager.orig_StartNewGame orig, UIManager self, bool permaDeath, bool bossRush)
@@ -321,6 +341,33 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     #endregion Main Menu start button stuff
 
+    private bool CheckForAnyChapterDep(int num)
+    {
+        if (num <= 1) return false;
+        for (int i = 1; i < num; i++)
+        {
+            bool chapterInstalled = Modding.ModHooks.GetMod($"Stories of a HK player - Chapter {i}") is Mod;
+            if (chapterInstalled) return true;
+        }
+        return false;
+    }
+
+    private bool CheckChapterDeps(int num)
+    {
+        if (num <= 1) return true;
+        for (int i = 1; i < num; i++)
+        {
+            bool chapterInstalled = Modding.ModHooks.GetMod($"Stories of a HK player - Chapter {i}") is Mod;
+            if (!chapterInstalled) continue;
+            for (int j = i + 1; j < num; j++)
+            {
+                bool nextChapterInstalled = Modding.ModHooks.GetMod($"Stories of a HK player - Chapter {j}") is Mod;
+                if (!nextChapterInstalled) return false;
+            }
+        }
+        return true;
+    }
+
     internal static void EndCallback()
     {
         UIManager.instance.QuitGame();
@@ -337,7 +384,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
         var modInstance = Modding.ModHooks.GetMod("Stories of a HK player - Chapter 1") as StoriesOfaHkPlayer_Ch1.StoriesOfaHkPlayer_Ch1;
         modInstance.SetEndCallback((source) =>
         {
-            UIManager.instance.UIMainStartGame();
+            MonoBehaviours.StartGameReceiver.GlobalCustomStartMain();
         });
     }
 
