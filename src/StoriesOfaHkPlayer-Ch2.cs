@@ -170,27 +170,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
     {
         yield return new WaitUntil(() => GameObject.Find("LogoTitle") != null);
 
-        // change main menu button to refer to `StartGameReceiver(instance).CustomStartMain()`
-        MonoBehaviours.StartGameReceiver newReceiver = UIManager.instance.gameObject.AddComponent<MonoBehaviours.StartGameReceiver>();
-        UnityEngine.EventSystems.EventTrigger startGameEventTrigger = UIManager.instance.mainMenuButtons.startButton.GetComponent<UnityEngine.EventSystems.EventTrigger>();
-        foreach (UnityEngine.EventSystems.EventTrigger.Entry t in startGameEventTrigger.triggers)
-        {
-            FieldInfo pcFi = Modding.ReflectionHelper.GetFieldInfo(typeof(UnityEngine.Events.UnityEventBase), "m_PersistentCalls", true);
-            // internal class
-            object pcGroup = pcFi.GetValue(t.callback);
-            FieldInfo pcgCallsFi = Modding.ReflectionHelper.GetFieldInfo(pcGroup.GetType(), "m_Calls", true);
-            object pcgCallsRaw = pcgCallsFi.GetValue(pcGroup);
-            Log($"pcgCallsRaw: {pcgCallsRaw} with type: {pcgCallsRaw.GetType()}");
-            IEnumerable<object> pcgCalls = Enumerable.OfType<object>((IEnumerable<object>)pcgCallsRaw);
-            foreach (object call in pcgCalls)
-            {
-                Log($"call: {call} with type: {call.GetType()}");
-                FieldInfo pcTargetFi = Modding.ReflectionHelper.GetFieldInfo(call.GetType(), "m_Target", true);
-                pcTargetFi.SetValue(call, newReceiver);
-                FieldInfo pcMethodFi = Modding.ReflectionHelper.GetFieldInfo(call.GetType(), "m_MethodName", true);
-                pcMethodFi.SetValue(call, "CustomStartMain");
-            }
-        }
+        ChangeStartGameButtonEffect();
 
         UIManager.EditMenus += GiveUiTextOutline;
     }
@@ -275,6 +255,31 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     #region Main Menu start button stuff
 
+    private void ChangeStartGameButtonEffect()
+    {
+        // change main menu button to refer to `StartGameReceiver(instance).CustomStartMain()`
+        MonoBehaviours.StartGameReceiver newReceiver = UIManager.instance.gameObject.GetOrAddComponent<MonoBehaviours.StartGameReceiver>();
+        UnityEngine.EventSystems.EventTrigger startGameEventTrigger = UIManager.instance.mainMenuButtons.startButton.GetComponent<UnityEngine.EventSystems.EventTrigger>();
+        foreach (UnityEngine.EventSystems.EventTrigger.Entry t in startGameEventTrigger.triggers)
+        {
+            FieldInfo pcFi = Modding.ReflectionHelper.GetFieldInfo(typeof(UnityEngine.Events.UnityEventBase), "m_PersistentCalls", true);
+            // internal class
+            object pcGroup = pcFi.GetValue(t.callback);
+            FieldInfo pcgCallsFi = Modding.ReflectionHelper.GetFieldInfo(pcGroup.GetType(), "m_Calls", true);
+            object pcgCallsRaw = pcgCallsFi.GetValue(pcGroup);
+            Log($"pcgCallsRaw: {pcgCallsRaw} with type: {pcgCallsRaw.GetType()}");
+            IEnumerable<object> pcgCalls = Enumerable.OfType<object>((IEnumerable<object>)pcgCallsRaw);
+            foreach (object call in pcgCalls)
+            {
+                Log($"call: {call} with type: {call.GetType()}");
+                FieldInfo pcTargetFi = Modding.ReflectionHelper.GetFieldInfo(call.GetType(), "m_Target", true);
+                pcTargetFi.SetValue(call, newReceiver);
+                FieldInfo pcMethodFi = Modding.ReflectionHelper.GetFieldInfo(call.GetType(), "m_MethodName", true);
+                pcMethodFi.SetValue(call, "CustomStartMain");
+            }
+        }
+    }
+
     private void ChangeMainMenuStartGameButton()
     {
         On.UIManager.StartNewGame += UIManagerOnStartNewGame;
@@ -284,7 +289,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     private void UIManagerOnStartNewGame(On.UIManager.orig_StartNewGame orig, UIManager self, bool permaDeath, bool bossRush)
     {
-        if (self.GetAttr<UIManager, GameManager>("gm").profileID == -1)
+        if (self.GetAttr<UIManager, GameManager>("gm").profileID == -2)
         {
             self.SetAttr<UIManager, bool>("permaDeath", permaDeath);
             self.SetAttr<UIManager, bool>("bossRush", bossRush);
@@ -308,14 +313,14 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
     private void GameManagerOnLoadGame(On.GameManager.orig_LoadGame orig, GameManager self, int saveSlot, Action<bool> callback)
     {
         bool origValue = self.gameConfig.useSaveEncryption;
-        if (saveSlot == -1)
+        if (saveSlot == -2)
         {
             self.gameConfig.useSaveEncryption = false;
         }
 
         orig(self, saveSlot, callback);
 
-        if (saveSlot == -1)
+        if (saveSlot == -2)
         {
             self.gameConfig.useSaveEncryption = origValue;
         }
@@ -323,7 +328,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
     private void DesktopPlatformOnReadSaveSlot(On.DesktopPlatform.orig_ReadSaveSlot orig, DesktopPlatform self, int slotIndex, Action<byte[]> callback)
     {
-        if (slotIndex == -1)
+        if (slotIndex == -2)
         {
             Assembly asm = Assembly.GetExecutingAssembly();
             using Stream s = asm.GetManifestResourceStream("StoriesOfaHkPlayer_Ch2.Resources.Save.json");
