@@ -69,6 +69,10 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
                 _abAssets = AssetBundle.LoadFromStream(s);
             }
         }
+        if (_abAssets == null)
+        {
+            LogError($"Error loading assets AssetBundle!");
+        }
 
         if (_abScenes == null)
         {
@@ -77,6 +81,10 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
             {
                 _abScenes = AssetBundle.LoadFromStream(s);
             }
+        }
+        if (_abScenes == null)
+        {
+            LogError($"Error loading scene AssetBundle!");
         }
     }
 
@@ -96,31 +104,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
 
         PrefabHolder.Preloaded(preloadedObjects);
 
-        bool anyDepInstalled = CheckForAnyChapterDep(2);
-        Log($"Any prev chapter installed: {anyDepInstalled}");
-        bool depsCorrect = CheckChapterDeps(2);
-        Log($"Correct prev chapters: {depsCorrect}");
-
-        var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
-        if (anyDepInstalled && !depsCorrect)
-        {
-            for (int i = 0; i < 10; i++)
-            {
-                LogError($"ENABLE CHAPTERS EITHER BY ITSELF, WITH ALL OTHER CHAPTERS OR AT LEAST THE PREVIOUS CHAPTER, DON'T SKIP OUT CHAPTERS IN THE MIDDLE!!!");
-            }
-
-            tmpStyle.enabled = false;
-        }
-        else if (anyDepInstalled && depsCorrect)
-        {
-            tmpStyle.enabled = false;
-            AdaptToCh1();
-        }
-        else
-        {
-            MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
-            GameManager.instance.StartCoroutine(WaitForTitle());
-        }
+        GameManager.instance.StartCoroutine(DoMenuShenenigans());
 
         Log("Initialized");
     }
@@ -166,6 +150,38 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
         ChangeMainMenuStartGameButton();
     }
 
+    private IEnumerator DoMenuShenenigans()
+    {
+        yield return new WaitWhile(() => MenuStyles.Instance == null);
+
+        bool anyDepInstalled = CheckForAnyChapterDep(2);
+        Log($"Any prev chapter installed: {anyDepInstalled}");
+        bool depsCorrect = CheckChapterDeps(2);
+        Log($"Correct prev chapters: {depsCorrect}");
+
+        var tmpStyle = MenuStyles.Instance.styles.First(x => x.styleObject.name.Contains("StoriesOfaHkPlayer_Ch2 Style"));
+        if (anyDepInstalled && !depsCorrect)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                LogError($"ENABLE CHAPTERS EITHER BY ITSELF, WITH ALL OTHER CHAPTERS OR AT LEAST THE PREVIOUS CHAPTER, DON'T SKIP OUT CHAPTERS IN THE MIDDLE!!!");
+            }
+
+            tmpStyle.enabled = false;
+        }
+        else if (anyDepInstalled && depsCorrect)
+        {
+            tmpStyle.enabled = false;
+            AdaptToCh1();
+        }
+        else
+        {
+            MenuStyles.Instance.SetStyle(MenuStyles.Instance.styles.ToList().IndexOf(tmpStyle), false, false);
+            yield return WaitForTitle();
+        }
+        yield break;
+    }
+
     private IEnumerator WaitForTitle()
     {
         yield return new WaitUntil(() => GameObject.Find("LogoTitle") != null);
@@ -173,6 +189,7 @@ public class StoriesOfaHkPlayer_Ch2 : SaveSettingsMod<SettingsClass>
         ChangeStartGameButtonEffect();
 
         UIManager.EditMenus += GiveUiTextOutline;
+        yield break;
     }
 
     private void GiveUiTextOutline()
